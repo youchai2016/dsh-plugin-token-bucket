@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.1 — 2026-10-15
+
+### Fixed
+
+- **The Host now ships its strict reflection** (`lib/typert.host.js`, exported as `./typert`). Without it the plugin could load every file and still have the balance stream refused — a Git or npm install would have looked installed and shown nothing.
+- A Host without a usable `fetch` is reported as `no fetch` instead of a vague network failure.
+- The water variables are set on the bucket root, so the spout, the falling stream and the droplets actually animate, and the low-water rule tints only the water rather than the whole pail.
+
+### Added
+
+- The settings panel shows the short, sanitised reason behind a non-ready state (no key, rejected key, no fetch, timeout, unreadable answer), so a first run can be diagnosed without opening a console.
+
+### Changed
+
+- The state screenshot was regenerated from the shipped UI, including the failure reason line.
+
 ## 0.1.0 — 2026-10-15
 
 ### Added

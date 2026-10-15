@@ -109,6 +109,7 @@ test('the bucket draws level, the granted share, the tap and the readout', t => 
   assert.equal(w.vTopped.textContent, '¥396.37');
   assert.equal(w.vCapacity.textContent, '¥575.28');
   assert.match(w.button.getAttribute('aria-label'), /¥575\.28/);
+  assert.equal(w.detail.hidden, true, 'a healthy read has nothing to explain');
   assert.equal(views.at(-1).levelPct, 100);
 
   // A spend both splashes and opens the tap.
@@ -137,6 +138,8 @@ test('a failed read keeps the water level and says so', t => {
   w.update({ type: 'snapshot', hostEpoch: 'e', seq: 2, at: AT + 300000, pollMs: 60000, status: 'unreachable', spentCents: 0, detail: 'http 503' });
   assert.equal(w.bucket.dataset.status, 'unreachable');
   assert.equal(w.amount.textContent, '¥575.28', 'the last real balance is not thrown away');
+  assert.equal(w.detail.hidden, false, 'the panel says why, so a first run is diagnosable');
+  assert.equal(w.detail.textContent, 'http 503');
   assert.equal(w.bucket.style['--flow'], '0.000', 'and the tap is shut');
   assert.equal(w.vTotal.textContent, '¥575.28');
   // An old but *successful* reading is reported as stale rather than live.

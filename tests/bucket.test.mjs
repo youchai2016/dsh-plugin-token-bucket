@@ -146,6 +146,8 @@ test('one read never leaks the key and classifies every failure', async () => {
   assert.equal(JSON.stringify(thrown).includes(key), false, 'a transport error must not be echoed either');
   const missing = await readBalance({ key: '', fetchImpl: async () => { throw new Error('must not be called'); } });
   assert.equal(missing.status, 'unconfigured');
+  const noFetch = await readBalance({ key, fetchImpl: undefined });
+  assert.deepEqual(noFetch, { status: 'unreachable', detail: 'no fetch' });
   assert.deepEqual(classifyHttp(403), { status: 'unauthorized', detail: 'http 403' });
 });
 

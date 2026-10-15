@@ -11,7 +11,7 @@ const manifest = JSON.parse(read('package.json'));
 
 test('package is a self-contained DSH bundle with only its own inserted row', () => {
   assert.equal(manifest.name, 'dsh-plugin-token-bucket');
-  assert.equal(manifest.version, '0.1.0');
+  assert.equal(manifest.version, '0.1.1');
   assert.equal(manifest.dsh.bundle.patch, './cordis.patch.yml');
   assert.equal(manifest.dsh.client.platform, 'web');
   for (const target of Object.values(manifest.exports)) assert.equal(fs.existsSync(path.join(root, target)), true);
@@ -88,4 +88,24 @@ test('the offline preview is self-contained, versioned and offline', () => {
   assert.ok(preview.includes(manifest.version));
   assert.doesNotMatch(preview.replace(/xmlns="http:\/\/www\.w3\.org\/2000\/svg"/g, ''), /https?:\/\//);
   assert.ok(manifest.files.includes('README.md'));
+});
+
+test('the host reflection describes the mounted stream exactly', async () => {
+  // Without this reflection the Host refuses the descriptor the browser half mounts,
+  // even when every other file is present and correct.
+  assert.equal(manifest.exports['./typert'], './lib/typert.host.js');
+  assert.equal(fs.existsSync(path.join(root, 'lib/typert.host.js')), true);
+  const typert = (await import('../lib/typert.host.js')).TYPERT;
+  const contract = await import('../lib/remote.js');
+  assert.equal(typert.package, manifest.name);
+  assert.equal(typert.face, 'host');
+  assert.equal(typert.invocations.length, 1);
+  assert.equal(typert.invocations[0], contract.BUCKET_WATCH_DESCRIPTOR);
+  assert.deepEqual(typert.schemas.map(schema => schema.name),
+    [contract.BUCKET_WATCH_DESCRIPTOR.result.typeSymbol.split('#')[1]]);
+  assert.equal(typert.schemas[0].create().safeParse({ nonsense: true }).success, false);
+  const service = typert.model.services[0];
+  assert.equal(service.key, 'tokenBucket');
+  assert.deepEqual(service.members.map(member => member.name), ['watch']);
+  assert.ok(service.description.length > 0);
 });

@@ -9,7 +9,8 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const inline = file => read(file)
   .replace(/^import[\s\S]*?from\s+['"][^'"]+['"];?[ \t]*\n/gm, '')
   .replace(/^export /gm, '');
-const { version } = JSON.parse(read('package.json'));
+const manifest = JSON.parse(read('package.json'));
+const { version } = manifest;
 
 const remote = read('lib/remote.js');
 const exportsBlock = /\nexport \{([^}]+)\};?\s*$/;
@@ -30,6 +31,13 @@ fs.writeFileSync(path.join(root, 'lib/client.js'),
 
 fs.writeFileSync(path.join(root, 'preview/runtime.js'),
   `// Generated from the same model and widget as the DSH plugin.\n(function(){'use strict';\n${common}\nwindow.BucketPet={BucketWidget,freshState,applySnapshot,viewOf,persistedOf,restoreState,parseAmount,formatCents,POLL,DEFAULTS,css:CSS};\n})();\n`);
+
+// Host-side strict reflection: authored, but shipped next to the contract it describes.
+const reflection = read('src/typert.host.js');
+if (!reflection.includes(`package: '${manifest.name}'`) || !reflection.includes('BUCKET_WATCH_DESCRIPTOR')) {
+  throw new Error('Host reflection does not describe this package; refusing a broken bundle');
+}
+fs.copyFileSync(path.join(root, 'src/typert.host.js'), path.join(root, 'lib/typert.host.js'));
 
 // Single-file preview works offline and in a browser with file://, no dev server required.
 const runtime = fs.readFileSync(path.join(root, 'preview/runtime.js'), 'utf8').replace(/<\/script/gi, '<\\/script');

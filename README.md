@@ -2,11 +2,11 @@
 
 **A little bucket that drains while your DeepSeek API balance is being spent.**
 
-![Six bucket states: full, pouring, low, refilled, unreadable, and dark theme](https://raw.githubusercontent.com/youchai2016/dsh-plugin-token-bucket/v0.1.0/docs/images/bucket-states.png)
+![Six bucket states: full, pouring, low, refilled, unreadable, and dark theme](https://raw.githubusercontent.com/youchai2016/dsh-plugin-token-bucket/v0.1.1/docs/images/bucket-states.png)
 
 一只挂在窗口角落的小水桶。**水是你的余额，漏出去的是正在花的钱。**
 
-Version 0.1.0.
+Version 0.1.1.
 
 ## What it does
 

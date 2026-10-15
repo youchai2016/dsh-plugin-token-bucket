@@ -51,6 +51,8 @@ export function parseBalancePayload(text) {
  */
 export async function readBalance({ fetchImpl, key, signal, timeoutMs = 8000 }) {
   if (typeof key !== 'string' || key.length === 0) return { status: 'unconfigured', detail: 'no key' };
+  // A Host without fetch is reported as itself, never as a vague network failure.
+  if (typeof fetchImpl !== 'function') return { status: 'unreachable', detail: 'no fetch' };
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   const stop = () => { clearTimeout(timer); if (signal) signal.removeEventListener('abort', forward); };

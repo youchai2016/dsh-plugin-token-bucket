@@ -65,6 +65,7 @@ export class BucketWidget {
             <dt data-i18n="label.capacity"></dt><dd class="v-capacity"></dd>
             <dt data-i18n="label.updated"></dt><dd class="v-updated"></dd>
           </dl>
+          <p class="detail" hidden></p>
           <div class="panel-actions"><button class="action reset" type="button" data-i18n="action.reset"></button><button class="action hide" type="button" data-i18n="action.hide"></button></div>
         </section>
         <button class="restore" type="button" hidden data-i18n-aria="action.restoreAria" data-i18n="action.restore"></button>
@@ -77,6 +78,7 @@ export class BucketWidget {
     this.amount = this.root.querySelector('.amount');
     this.delta = this.root.querySelector('.delta');
     this.panel = this.root.querySelector('.panel');
+    this.detail = this.root.querySelector('.detail');
     this.restore = this.root.querySelector('.restore');
     this.range = this.root.querySelector('#bucket-size');
     this.amountSwitch = this.root.querySelector('#bucket-amount');
@@ -273,6 +275,10 @@ export class BucketWidget {
       ? translate(this.language, 'value.secondsAgo', { count: seconds })
       : translate(this.language, 'value.minutesAgo', { count: Math.round(seconds / 60) });
     const statusText = translate(this.language, view.stale ? 'state.stale' : `state.${view.status}`);
+    // A short, already-sanitised reason, so a first-run failure is diagnosable
+    // (wrong key, no key, no fetch, timeout) instead of just "cannot connect".
+    this.detail.textContent = view.status === 'ready' && !view.stale ? '' : (this.state.detail ?? '');
+    this.detail.hidden = this.detail.textContent === '';
     this.button.setAttribute('aria-label', view.totalCents === null
       ? translate(this.language, 'bucket.ariaNoBalance', { status: statusText })
       : translate(this.language, 'bucket.aria', { status: statusText, balance: view.totalText, level: view.levelPct }));
