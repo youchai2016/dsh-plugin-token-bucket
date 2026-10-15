@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>余额水桶 · Balance Bucket</title>
+<style>
+:root{color-scheme:light;--bg:#f2f5fa;--card:#ffffffd0;--ink:#22314a;--muted:#8394ab;--line:#dde4ee;--blue:#3d6fd6}
+body.dark{color-scheme:dark;--bg:#151d2b;--card:#1e2839e0;--ink:#e6eeff;--muted:#93a6c2;--line:#33425c;--blue:#9db9ff}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font:13px/1.6 Inter,-apple-system,"PingFang SC",system-ui,sans-serif}
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--line)}
+header strong{font-size:15px}header small{color:var(--muted);letter-spacing:1.2px;font-size:10px}
+main{max-width:820px;margin:0 auto;padding:26px 22px}
+h1{font-size:22px;margin:0 0 6px}p.lead{color:var(--muted);margin:0 0 20px}
+.controls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:7px 12px}
+button:hover{border-color:var(--blue);color:var(--blue)}button.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+button.primary:hover{color:#fff;filter:brightness(1.08)}
+button:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+.status{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;max-width:420px}
+.status dt{color:var(--muted)}.status dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+.note{color:var(--muted);margin-top:18px;font-size:12px}
+</style></head><body>
+<header><strong>余额水桶</strong><small>OFFLINE PREVIEW / __PACKAGE_VERSION__</small></header>
+<main>
+  <h1>水就是余额，漏的就是钱。</h1>
+  <p class="lead">这是离线预览：不连 DSH、不发任何网络请求，样本由下面这些按钮伪造。<br>右下角是真正的可交互水桶——拖动、右键、悬停都试试。</p>
+  <div class="controls">
+    <button class="primary" data-action="fill">装水 ¥575.28</button>
+    <button data-action="spend">花掉 ¥0.04</button>
+    <button data-action="heavy">狂烧 ¥3.20</button>
+    <button data-action="refill">充值 +¥100</button>
+    <button data-action="bonus">赠送 +¥50</button>
+    <button data-action="error">余额读取失败</button>
+    <button data-action="nokey">没有 key</button>
+    <button data-action="lang">EN / 中文</button>
+    <button data-action="theme">深浅色</button>
+  </div>
+  <dl class="status">
+    <dt>水位</dt><dd id="s-level">—</dd>
+    <dt>余额</dt><dd id="s-total">—</dd>
+    <dt>赠送 / 充值</dt><dd id="s-split">—</dd>
+    <dt>消耗速率</dt><dd id="s-rate">—</dd>
+    <dt>水流 / 状态</dt><dd id="s-flow">—</dd>
+  </dl>
+  <p class="note">预览只验证渲染与动画，不代表真实余额。</p>
+</main>
+<div id="bucket-host"></div>
+<script>/*__RUNTIME__*/</script>
+<script>
+let seq = 0, at = Date.now();
+let wallet = { total: 57528, granted: 17891, topped: 39637 };
+const CLOCK = { skew: 0 };
+const host = document.querySelector('#bucket-host');
+const bucket = new BucketPet.BucketWidget(host, {
+  css: BucketPet.css, storage: null, language: 'zh',
+  now: () => Date.now() + CLOCK.skew,
+  onView: view => {
+    document.querySelector('#s-level').textContent = view.totalCents === null ? '—' : view.levelPct + '%';
+    document.querySelector('#s-total').textContent = view.totalText || '—';
+    document.querySelector('#s-split').textContent = `${view.grantedText || '—'} / ${view.toppedUpText || '—'}`;
+    document.querySelector('#s-rate').textContent = view.rateCentsPerMin > 0 ? view.rateText + ' / min' : '—';
+    document.querySelector('#s-flow').textContent = `${view.flow.toFixed(2)} · ${view.status}`;
+  },
+});
+function send(extra = {}) {
+  seq += 1; at = Date.now() + CLOCK.skew;
+  bucket.update({
+    type: 'snapshot', hostEpoch: 'preview', seq, at, pollMs: 60000, status: 'ready', currency: 'CNY',
+    totalCents: wallet.total, grantedCents: wallet.granted, toppedUpCents: wallet.topped, available: true,
+    spentCents: 0, ...extra,
+  });
+}
+// The real service deducts the granted wallet first; the preview mirrors that.
+function spend(cents) {
+  const fromGranted = Math.min(wallet.granted, cents);
+  wallet.granted -= fromGranted; wallet.total -= cents;
+  CLOCK.skew += 8000;
+  send({ at: Date.now() + CLOCK.skew });
+}
+document.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', () => {
+  const action = button.dataset.action;
+  if (action === 'fill') { wallet = { total: 57528, granted: 17891, topped: 39637 }; send(); }
+  if (action === 'spend') spend(4);
+  if (action === 'heavy') spend(320);
+  if (action === 'refill') { wallet.topped += 10000; wallet.total += 10000; CLOCK.skew += 8000; send({ at: Date.now() + CLOCK.skew }); }
+  if (action === 'bonus') { wallet.granted += 5000; wallet.total += 5000; CLOCK.skew += 8000; send({ at: Date.now() + CLOCK.skew }); }
+  if (action === 'error') send({ status: 'unreachable', detail: 'http 503' });
+  if (action === 'nokey') send({ status: 'unconfigured', detail: 'no key' });
+  if (action === 'lang') bucket.setLanguage(bucket.language === 'zh' ? 'en' : 'zh');
+  if (action === 'theme') document.body.classList.toggle('dark');
+}));
+send();
+// Preview-only driver for browser checks; not included in the plugin bundle.
+window.previewBucket = bucket;
+window.previewSend = send;
+window.previewSpend = spend;
+window.previewWallet = () => ({ ...wallet });
+</script></body></html>
